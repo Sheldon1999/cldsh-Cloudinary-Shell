@@ -1,45 +1,32 @@
-````markdown
 # Cloudinary Shell (cldsh)
 
-A tiny interactive CLI (REPL) to explore and manage your Cloudinary account like a filesystem.  
+A tiny interactive CLI (REPL) to explore and manage your Cloudinary account — folder-style.  
 Supports **ls**, **cd**, **mkdir**, **upload**, **rm**, **rm -rf**, **pwd**, **tree**, and **url**.  
-Works on the **Free** plan.
-
----
+Works fine on the **Free plan**.
 
 ## Features
-- Shell-like prompt that shows the **current Cloudinary folder**.
-- `ls -l` prints a table with **SIZE(KB)**, **DIMENSIONS(px)**, **NAME**, **TYPE**.
-- `tree` draws a clean ASCII tree with proper connectors.
-- `upload` from any local path (supports quotes and `~`) and prints the **CDN URL**.
-- `url` fetches the CDN URL later; `--t="f_auto,q_auto,w_800"` injects a transform segment.
-- `rm -rf` recursively deletes folders (careful!).
-- `--rt=image|video|raw` to browse different resource types.
+- Familiar shell-like prompt that shows the **current Cloudinary folder**.
+- `ls -l` shows **Size (KB)**, **Dimensions (px)**, **Name**, **Type** with a header.
+- `tree` draws a **nice ASCII tree** with proper indentation.
+- `upload` from a local path (supports quoted paths and `~`), prints the **CDN URL**.
+- `url` prints the CDN URL later; optionally injects a transform string.
+- `rm -rf` recursively deletes a folder and its contents.
+- Supports `--rt` to browse **image/video/raw** assets.
 
 ---
 
 ## Prereqs
 - **Node.js 18+**
-- Cloudinary account (`cloud_name`, `api_key`, `api_secret`)
+- A Cloudinary account (get `cloud_name`, `api_key`, `api_secret`)
 
 ---
 
 ## Setup
 ```bash
-# in the CLI folder
+# go to your project folder that contains this CLI
 npm i
-
-# environment
 cp .env.example .env
 # edit .env with your Cloudinary creds
-````
-
-Optional (to run `cldsh` globally):
-
-```bash
-npm link
-# now you can run: cldsh
-```
 
 ---
 
@@ -52,8 +39,6 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
-
-> `.env.example` is provided; `.env` is gitignored.
 
 ---
 

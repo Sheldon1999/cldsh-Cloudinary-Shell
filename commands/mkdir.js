@@ -5,6 +5,7 @@ export default async function mkdir(ctx, args) {
   const full = utils.join(ctx.cwd, name);
   try {
     await utils.createFolder(full);
+    ctx.invalidateFolderCache?.();
     printer.println(printer.ok(`Created folder: ${full}`));
   } catch (e) {
     printer.println(printer.error(e?.message || String(e)));

@@ -1,6 +1,6 @@
 # Cloudinary Shell (`cldsh`)
 
-[![npm version](https://img.shields.io/npm/v/cldsh.svg)](https://www.npmjs.com/package/cldsh)
+[![npm version](https://img.shields.io/npm/v/cloudinary-shell.svg)](https://www.npmjs.com/package/cloudinary-shell)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A tiny interactive CLI (REPL) to explore and manage your Cloudinary account — folder-style.  
@@ -32,13 +32,13 @@ Works fine on the **Free plan**.
 ## Quick Start (No Install)
 
 ```bash
-npx cldsh
+npx cloudinary-shell
 ```
 
 Or install globally:
 
 ```bash
-npm i -g cldsh
+npm i -g cloudinary-shell
 cldsh
 ```
 

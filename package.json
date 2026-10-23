@@ -4,7 +4,7 @@
   "description": "A powerful interactive Cloudinary shell (cldsh) with navigation, recursive upload, image preview, transformations, and multi-profile support",
   "type": "module",
   "bin": {
-    "cldsh": "./cldsh.js"
+    "cldsh": "cldsh.js"
   },
   "scripts": {
     "test": "node --test"

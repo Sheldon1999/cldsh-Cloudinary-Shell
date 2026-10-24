@@ -586,3 +586,6 @@ When generating code or architecture for Cloudinary, AI models frequently make t
 | **`rm -rf <dir\|glob>`**| Recursively delete folders and contents | `rm -rf old-folder` / `rm -rf test*` |
 | **`tree [-d N]`** | ASCII tree hierarchy visualization | `tree -d 2` |
 | **`--dry-run`** | Preview destructive / batch actions safely | `upload ./dir -r --dry-run` / `rm cld* --dry-run` |
+| **`mcp`** | Run live MCP server diagnostics & tool health check | `mcp` or `cldsh mcp` |
+| **`--mcp`** | Boot native stdio MCP server for Claude & Cursor | `cldsh --mcp` |
+| **`--json`** | Output structured JSON for jq and automation pipelines | `cldsh ls portfolio --json` |

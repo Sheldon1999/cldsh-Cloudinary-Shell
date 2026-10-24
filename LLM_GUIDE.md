@@ -267,3 +267,48 @@ When an LLM needs to upload assets and inject the resulting URLs into project co
    ```html
    <img src="https://res.cloudinary.com/<cloud>/image/upload/f_auto,q_auto/portfolio/hero.png" alt="Hero" />
    ```
+
+---
+
+## 6. Native Model Context Protocol (MCP) Integration
+
+`cloudinary-shell` (`cldsh`) can run directly as a native stdio MCP server for Claude Desktop, Cursor, and any MCP-compliant AI tool.
+
+### Configuration
+
+#### Claude Desktop (`claude_desktop_config.json`)
+```json
+{
+  "mcpServers": {
+    "cloudinary": {
+      "command": "npx",
+      "args": ["-y", "cloudinary-shell", "--mcp"]
+    }
+  }
+}
+```
+
+#### Claude Code (Terminal CLI Agent)
+```bash
+claude mcp add cloudinary npx -y cloudinary-shell --mcp
+```
+
+#### Cursor IDE (Cursor Settings -> Features -> MCP Servers)
+- **Command**: `npx -y cloudinary-shell --mcp`
+
+#### Diagnostic Self-Test Command
+```bash
+cldsh mcp
+```
+### Native Tools Provided
+
+| Tool Name | Description | Key Arguments |
+| :--- | :--- | :--- |
+| **`cloudinary_list`** | Browse folders and assets with filtering | `path`, `resource_type`, `max` |
+| **`cloudinary_upload`** | Upload local file or directory | `local_path`, `name`, `folder`, `recursive`, `overwrite`, `dry_run` |
+| **`cloudinary_get_url`** | Generate optimized delivery URLs | `public_id`, `transformation`, `signed`, `resource_type` |
+| **`cloudinary_info`** | Inspect asset technical metadata | `public_id`, `resource_type` |
+| **`cloudinary_delete`** | Delete asset or recursive folder purge | `target`, `recursive`, `resource_type`, `dry_run` |
+| **`cloudinary_move`** | Rename or move assets between folders | `source`, `target`, `overwrite`, `dry_run` |
+| **`cloudinary_tree`** | Structural folder tree hierarchy | `folder`, `depth`, `resource_type` |
+| **`cloudinary_download`** | Download remote assets to local disk | `public_id`, `destination`, `resource_type` |

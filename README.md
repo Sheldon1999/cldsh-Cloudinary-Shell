@@ -41,7 +41,84 @@ Or install globally:
 npm i -g cloudinary-shell
 cldsh
 ```
+---
 
+## The 3 Operating Modes
+
+`cloudinary-shell` (`cldsh`) runs in three distinct modes from a single unified binary:
+
+### 1. Interactive REPL Mode (For Humans)
+Launch with zero arguments for an interactive Unix-like virtual filesystem shell with tab-completion, persistent history, and inline terminal graphics:
+```bash
+cldsh
+```
+
+### 2. Headless CLI Mode (For Scripts, CI/CD, & Automation)
+Pass commands directly as CLI arguments. Runs once, outputs data to `stdout`, errors to `stderr`, and exits with standard exit codes (`0` on success, `1` on error):
+
+```bash
+# Upload a folder in CI/CD pipeline (e.g. GitHub Actions)
+cldsh upload ./dist/assets -r
+
+# Extract raw CDN URLs for all assets in a folder using jq
+cldsh ls portfolio --json | jq -r '.files[].secure_url'
+
+# Find all assets larger than 100 KB
+cldsh ls portfolio --json | jq '.files[] | select(.bytes > 100000) | .public_id'
+
+# Safe dry-run preview in scripts
+cldsh rm cld* --dry-run
+```
+
+### 3. Native Model Context Protocol (MCP) Server (For AI Coding Agents)
+Boot as an stdio JSON-RPC 2.0 server providing native function-calling tools to AI assistants:
+
+```bash
+cldsh --mcp
+```
+
+#### Connect to Claude Desktop (`claude_desktop_config.json`)
+```json
+{
+  "mcpServers": {
+    "cloudinary": {
+      "command": "npx",
+      "args": ["-y", "cloudinary-shell", "--mcp"]
+    }
+  }
+}
+```
+
+#### Connect to Claude Code (Terminal AI)
+```bash
+claude mcp add cloudinary npx -y cloudinary-shell --mcp
+```
+
+#### Connect to Cursor IDE
+Go to **Cursor Settings** $\to$ **Features** $\to$ **MCP Servers** $\to$ **Add New MCP Server**:
+- **Name**: `cloudinary`
+- **Type**: `command`
+- **Command**: `npx -y cloudinary-shell --mcp`
+
+#### Test MCP Server Diagnostics (Built-in)
+Test your MCP server handshake, tool declarations, and live account connection with one command:
+```bash
+cldsh mcp
+```
+
+#### 8 Native MCP Tools Exposed to AI Models
+| Tool Name | Description | Key Arguments |
+| :--- | :--- | :--- |
+| **`cloudinary_list`** | Browse folders & media assets | `path`, `resource_type`, `max` |
+| **`cloudinary_upload`** | Upload local file or directory | `local_path`, `folder`, `recursive`, `dry_run` |
+| **`cloudinary_get_url`** | Generate optimized delivery URLs | `public_id`, `transformation`, `signed` |
+| **`cloudinary_info`** | Inspect asset technical metadata | `public_id`, `resource_type` |
+| **`cloudinary_delete`** | Delete assets or folders | `target`, `recursive`, `dry_run` |
+| **`cloudinary_move`** | Rename or move across folders | `source`, `target`, `overwrite`, `dry_run` |
+| **`cloudinary_tree`** | Directory tree hierarchy | `folder`, `depth`, `resource_type` |
+| **`cloudinary_download`** | Download remote assets to local disk | `public_id`, `destination`, `resource_type` |
+
+*(The MCP server automatically inherits your active credentials from `~/.config/cldsh/credentials.json` or `.env`)*.
 ---
 
 ## Prereqs

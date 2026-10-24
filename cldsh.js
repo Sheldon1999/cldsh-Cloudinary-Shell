@@ -126,8 +126,9 @@ async function runHeadlessCli(argv) {
     process.exit(1);
   }
 
-  const offlineCommands = ['help', 'login', 'config', 'pwd', 'lpwd', 'lcd'];
-  if (!isConfigured() && !offlineCommands.includes(cmd)) {
+  const offlineCommands = ['help', 'login', 'config', 'pwd', 'lpwd', 'lcd', 'mcp'];
+  const isDryRun = Boolean(flags['dry-run'] || flags.dryRun);
+  if (!isConfigured() && !offlineCommands.includes(cmd) && !isDryRun) {
     process.stderr.write('Error: Not connected to a Cloudinary account. Run "cldsh login" or set CLOUDINARY_URL in .env\n');
     process.exit(1);
   }
@@ -182,10 +183,11 @@ function runRepl() {
         printer.println(printer.warn(`Unknown command: ${cmd}`));
         printer.println(printer.dim('Type "help" to see available commands.'));
       } else {
-        const offlineCommands = ['help', 'login', 'config', 'exit', 'quit', 'pwd', 'lpwd', 'lcd'];
-        if (!isConfigured() && !offlineCommands.includes(cmd)) {
-          printer.println(printer.warn(`Not connected to a Cloudinary account.`));
-          printer.println(printer.dim(`Type "login" to connect your account or "config" for options.`));
+        const offlineCommands = ['help', 'login', 'config', 'exit', 'quit', 'pwd', 'lpwd', 'lcd', 'mcp'];
+        const isDryRun = Boolean(flags['dry-run'] || flags.dryRun);
+        if (!isConfigured() && !offlineCommands.includes(cmd) && !isDryRun) {
+          printer.println(printer.warn('Not connected to a Cloudinary account.'));
+          printer.println(printer.dim('Type "login" to connect your account or "config" for options.'));
         } else {
           await run(ctx, args, flags);
         }

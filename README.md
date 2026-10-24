@@ -1,59 +1,100 @@
 # Cloudinary Shell (`cldsh`)
 
+### The Native Model Context Protocol (MCP) Server & Interactive Terminal Shell for Cloudinary
+
 [![npm version](https://img.shields.io/npm/v/cloudinary-shell.svg)](https://www.npmjs.com/package/cloudinary-shell)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![MCP Protocol](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
 
-A tiny interactive CLI (REPL) to explore and manage your Cloudinary account — folder-style.  
-Supports **ls**, **cd**, **mkdir**, **upload**, **download**, **mv**, **view**, **open**, **info**, **rm**, **rm -rf**, **pwd**, **lcd**, **lpwd**, **tree**, **url**, and **config**.  
-Works fine on the **Free plan**.
+Turn your Cloudinary account into a native AI tool for **Claude Desktop**, **Cursor IDE**, and **Claude Code** via the Model Context Protocol (MCP) — while providing developers with an interactive Unix-style virtual filesystem shell and headless CLI for CI/CD pipelines.
 
-> 🤖 **Working on a project that needs Cloudinary?** Pass [**`CLOUDINARY_GUIDE.md`**](CLOUDINARY_GUIDE.md) to your AI agent / LLM for complete integration patterns (Node.js, Next.js, React, Python), URL transformation rules, security standards, and `cldsh` CLI workflows.
+> 🤖 **Working on a project that needs Cloudinary?** Pass [**`CLOUDINARY_GUIDE.md`**](CLOUDINARY_GUIDE.md) or [**`LLM_GUIDE.md`**](LLM_GUIDE.md) to your AI agent for complete integration patterns (Next.js, React, Node.js, Python), URL transformation rules, security standards, and `cldsh` CLI workflows.
 
-## Features
-- Familiar shell-like prompt that shows the **current Cloudinary folder**.
-- **Tab Autocompletion** for commands, folders, and flags.
-- **Persistent Command History** across sessions (Up / Down arrows).
-- `ls -l` shows **Size (KB)**, **Dimensions (px)**, **Name**, **Type** with a header.
-- `ls [path]` browse contents of arbitrary subfolders or parent folders.
-- `info` inspect comprehensive asset metadata (dimensions, size, tags, timestamps).
-- `download` save any Cloudinary asset to local disk.
-- `upload` from local files or directories, with `-r` (recursive upload with concurrency and collision handling).
-- `mv` rename assets or move them across folders (`mv hero archive/hero`).
-- `lcd` & `lpwd` navigate your local machine directory directly inside the shell.
-- `view` / `preview` render images and video thumbnails **directly inside your terminal** (Warp, iTerm2, WezTerm, VS Code).
-- `open` view asset URL in your default browser.
-- `tree` draws a **nice ASCII tree** with proper indentation.
-- `url` prints the CDN URL; optionally injects a transform string or signs private URLs.
-- `rm` and `rm -rf` delete assets or folders (supports **wildcards** like `rm cld*` or `rm *.png`).
-- `--dry-run` flag to preview batch uploads and deletions safely.
-- Supports `--rt` to browse **image/video/raw** assets.
 ---
 
-## Quick Start (No Install)
+## ⚡ Quick Start
+
+### 1. For AI Coding Agents (Native MCP Server)
+Add Cloudinary capabilities directly to Claude Desktop, Cursor, or Claude Code in seconds:
+
+```bash
+# Claude Code (Terminal AI)
+claude mcp add cloudinary npx -y cloudinary-shell --mcp
+
+# Or launch stdio server directly
+npx -y cloudinary-shell --mcp
+```
+
+### 2. For Developers (Interactive Terminal Shell)
+Launch an interactive virtual filesystem shell with tab-completion, persistent history, and inline terminal image rendering:
 
 ```bash
 npx cloudinary-shell
 ```
 
-Or install globally:
+### 3. For CI/CD & Automation (Headless CLI)
+Execute single commands non-interactively with structured `--json` output for `jq` and deployment pipelines:
 
 ```bash
-npm i -g cloudinary-shell
-cldsh
+cldsh upload ./dist/assets -r --json
 ```
+
 ---
 
-## The 3 Operating Modes
+## 🔌 Native Model Context Protocol (MCP) Integration (For AI Agents)
 
-`cloudinary-shell` (`cldsh`) runs in three distinct modes from a single unified binary:
+`cloudinary-shell` exposes **8 atomic tools** over standard `stdio` JSON-RPC 2.0. AI coding agents can inspect folders, upload assets, and generate responsive delivery URLs without hallucinating SDK namespaces or wasting context tokens.
 
-### 1. Interactive REPL Mode (For Humans)
-Launch with zero arguments for an interactive Unix-like virtual filesystem shell with tab-completion, persistent history, and inline terminal graphics:
-```bash
-cldsh
+### Client Setup Guides
+
+#### Claude Desktop (`claude_desktop_config.json`)
+```json
+{
+  "mcpServers": {
+    "cloudinary": {
+      "command": "npx",
+      "args": ["-y", "cloudinary-shell", "--mcp"]
+    }
+  }
+}
 ```
 
-### 2. Headless CLI Mode (For Scripts, CI/CD, & Automation)
+#### Cursor IDE
+Go to **Cursor Settings** → **Features** → **MCP Servers** → **Add New MCP Server**:
+- **Name**: `cloudinary`
+- **Type**: `command`
+- **Command**: `npx -y cloudinary-shell --mcp`
+
+#### Claude Code (Anthropic Terminal CLI)
+```bash
+claude mcp add cloudinary npx -y cloudinary-shell --mcp
+```
+
+#### Test MCP Server Diagnostics (Built-in)
+Test your MCP server handshake, tool declarations, and live account connection with one command:
+```bash
+cldsh mcp
+```
+
+### 🛠️ 8 Native MCP Tools Exposed to AI Models
+
+| Tool Name | Description | Key Arguments |
+| :--- | :--- | :--- |
+| **`cloudinary_list`** | Browse folders & media assets with filtering | `path`, `resource_type`, `max` |
+| **`cloudinary_upload`** | Upload local file or directory (recursive & concurrent) | `local_path`, `folder`, `recursive`, `dry_run` |
+| **`cloudinary_get_url`** | Generate optimized delivery URLs & transformations | `public_id`, `transformation`, `signed` |
+| **`cloudinary_info`** | Inspect asset technical metadata (dimensions, size, tags) | `public_id`, `resource_type` |
+| **`cloudinary_delete`** | Delete assets or recursive folder purge | `target`, `recursive`, `dry_run` |
+| **`cloudinary_move`** | Rename or move assets across virtual folders | `source`, `target`, `overwrite`, `dry_run` |
+| **`cloudinary_tree`** | Directory tree hierarchy visualization | `folder`, `depth`, `resource_type` |
+| **`cloudinary_download`** | Download remote assets to local disk | `public_id`, `destination`, `resource_type` |
+
+*(Credentials are inherited automatically from `~/.config/cldsh/credentials.json` or `.env`)*.
+
+---
+
+## 💻 Headless CLI Mode (For Scripts, CI/CD, & Automation)
+
 Pass commands directly as CLI arguments. Runs once, outputs data to `stdout`, errors to `stderr`, and exits with standard exit codes (`0` on success, `1` on error):
 
 ```bash
@@ -70,57 +111,27 @@ cldsh ls portfolio --json | jq '.files[] | select(.bytes > 100000) | .public_id'
 cldsh rm cld* --dry-run
 ```
 
-### 3. Native Model Context Protocol (MCP) Server (For AI Coding Agents)
-Boot as an stdio JSON-RPC 2.0 server providing native function-calling tools to AI assistants:
-
-```bash
-cldsh --mcp
-```
-
-#### Connect to Claude Desktop (`claude_desktop_config.json`)
-```json
-{
-  "mcpServers": {
-    "cloudinary": {
-      "command": "npx",
-      "args": ["-y", "cloudinary-shell", "--mcp"]
-    }
-  }
-}
-```
-
-#### Connect to Claude Code (Terminal AI)
-```bash
-claude mcp add cloudinary npx -y cloudinary-shell --mcp
-```
-
-#### Connect to Cursor IDE
-Go to **Cursor Settings** $\to$ **Features** $\to$ **MCP Servers** $\to$ **Add New MCP Server**:
-- **Name**: `cloudinary`
-- **Type**: `command`
-- **Command**: `npx -y cloudinary-shell --mcp`
-
-#### Test MCP Server Diagnostics (Built-in)
-Test your MCP server handshake, tool declarations, and live account connection with one command:
-```bash
-cldsh mcp
-```
-
-#### 8 Native MCP Tools Exposed to AI Models
-| Tool Name | Description | Key Arguments |
-| :--- | :--- | :--- |
-| **`cloudinary_list`** | Browse folders & media assets | `path`, `resource_type`, `max` |
-| **`cloudinary_upload`** | Upload local file or directory | `local_path`, `folder`, `recursive`, `dry_run` |
-| **`cloudinary_get_url`** | Generate optimized delivery URLs | `public_id`, `transformation`, `signed` |
-| **`cloudinary_info`** | Inspect asset technical metadata | `public_id`, `resource_type` |
-| **`cloudinary_delete`** | Delete assets or folders | `target`, `recursive`, `dry_run` |
-| **`cloudinary_move`** | Rename or move across folders | `source`, `target`, `overwrite`, `dry_run` |
-| **`cloudinary_tree`** | Directory tree hierarchy | `folder`, `depth`, `resource_type` |
-| **`cloudinary_download`** | Download remote assets to local disk | `public_id`, `destination`, `resource_type` |
-
-*(The MCP server automatically inherits your active credentials from `~/.config/cldsh/credentials.json` or `.env`)*.
 ---
 
+## 🖥️ Interactive Shell Features
+- Familiar shell-like prompt that shows the **current Cloudinary folder** (`[my-cloud]$~/current/folder`).
+- **Tab Autocompletion** for commands, folders, and flags.
+- **Persistent Command History** across sessions (Up / Down arrows).
+- `view` / `preview` renders images and video thumbnails **directly inside your terminal** (Warp, iTerm2, WezTerm, VS Code).
+- `ls -l` shows **Size (KB)**, **Dimensions (px)**, **Name**, **Type** with an aligned header.
+- `ls [path]` browse contents of arbitrary subfolders or parent folders.
+- `info` inspect comprehensive asset metadata (dimensions, size, tags, timestamps).
+- `download` save any Cloudinary asset to local disk.
+- `upload` from local files or directories, with `-r` (recursive upload with concurrency and collision handling).
+- `mv` rename assets or move them across folders (`mv hero archive/hero`).
+- `lcd` & `lpwd` navigate your local machine directory directly inside the shell.
+- `open` view asset URL in your default browser.
+- `tree` draws a **nice ASCII tree** with proper indentation.
+- `url` prints the CDN URL; optionally injects a transform string or signs private URLs.
+- `rm` and `rm -rf` delete assets or folders (supports **wildcards** like `rm cld*` or `rm *.png`).
+- `--dry-run` flag to preview batch uploads and deletions safely.
+- Supports `--rt` to browse **image/video/raw** assets.
+---
 ## Prereqs
 - **Node.js 18+**
 - A Cloudinary account (get `cloud_name`, `api_key`, `api_secret` or `CLOUDINARY_URL`)

@@ -7,6 +7,10 @@ import process from 'node:process';
 
 const execFileAsync = promisify(execFile);
 const CLDSH_BIN = path.resolve(process.cwd(), 'cldsh.js');
+const TEST_ENV = {
+  ...process.env,
+  CLOUDINARY_URL: 'cloudinary://test_key:test_secret@test_cloud',
+};
 
 test('cli headless: --version prints version and exits 0', async () => {
   const { stdout, stderr } = await execFileAsync(process.execPath, [CLDSH_BIN, '--version']);
@@ -41,13 +45,11 @@ test('cli headless: lpwd outputs process.cwd() and exits 0', async () => {
 });
 
 test('cli headless: upload --dry-run --json outputs clean JSON', async () => {
-  const { stdout, stderr } = await execFileAsync(process.execPath, [
-    CLDSH_BIN,
-    'upload',
-    'package.json',
-    '--dry-run',
-    '--json',
-  ]);
+  const { stdout, stderr } = await execFileAsync(
+    process.execPath,
+    [CLDSH_BIN, 'upload', 'package.json', '--dry-run', '--json'],
+    { env: TEST_ENV }
+  );
   assert.equal(stderr, '');
   const data = JSON.parse(stdout);
   assert.equal(data.dryRun, true);
@@ -57,14 +59,11 @@ test('cli headless: upload --dry-run --json outputs clean JSON', async () => {
 });
 
 test('cli headless: mv --dry-run --json outputs clean JSON', async () => {
-  const { stdout, stderr } = await execFileAsync(process.execPath, [
-    CLDSH_BIN,
-    'mv',
-    'hero',
-    'archive/',
-    '--dry-run',
-    '--json',
-  ]);
+  const { stdout, stderr } = await execFileAsync(
+    process.execPath,
+    [CLDSH_BIN, 'mv', 'hero', 'archive/', '--dry-run', '--json'],
+    { env: TEST_ENV }
+  );
   assert.equal(stderr, '');
   const data = JSON.parse(stdout);
   assert.equal(data.from, 'hero');
@@ -75,17 +74,33 @@ test('cli headless: mv --dry-run --json outputs clean JSON', async () => {
 test('cli headless: upload missing file with --json exits 1 with clean stderr', async () => {
   await assert.rejects(
     async () => {
-      await execFileAsync(process.execPath, [
-        CLDSH_BIN,
-        'upload',
-        'non-existent-file-xyz.png',
-        '--json',
-      ]);
+      await execFileAsync(
+        process.execPath,
+        [CLDSH_BIN, 'upload', 'non-existent-file-xyz.png', '--json'],
+        { env: TEST_ENV }
+      );
     },
     (err) => {
       assert.equal(err.code, 1);
       assert.equal(err.stdout, '');
       assert.ok(err.stderr.includes('Error: File or directory not found'));
+      return true;
+    }
+  );
+});
+
+test('cli headless: unconfigured environment exits 1 with login guidance', async () => {
+  await assert.rejects(
+    async () => {
+      await execFileAsync(
+        process.execPath,
+        [CLDSH_BIN, 'ls'],
+        { env: { PATH: process.env.PATH, HOME: '/tmp' } }
+      );
+    },
+    (err) => {
+      assert.equal(err.code, 1);
+      assert.ok(err.stderr.includes('Not connected to a Cloudinary account'));
       return true;
     }
   );

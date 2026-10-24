@@ -138,8 +138,16 @@ test('mcp: stdio integration test with child process', async () => {
 
   proc.stdin.write(request);
 
-  // Wait briefly for response
-  await new Promise(r => setTimeout(r, 200));
+  // Wait for response line event-driven (no fixed timeout race condition)
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Timeout waiting for MCP response')), 5000);
+    proc.stdout.on('data', () => {
+      if (stdoutData.includes('\n')) {
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+  });
 
   proc.kill('SIGINT');
 

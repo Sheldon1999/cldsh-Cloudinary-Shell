@@ -1,6 +1,6 @@
 {
   "name": "cloudinary-shell",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "A powerful interactive Cloudinary shell (cldsh) with navigation, recursive upload, image preview, transformations, and multi-profile support",
   "type": "module",
   "bin": {

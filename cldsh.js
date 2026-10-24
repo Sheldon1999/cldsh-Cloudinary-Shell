@@ -28,8 +28,9 @@ import viewCmd from './commands/view.js';
 import mvCmd from './commands/mv.js';
 import lcdCmd from './commands/lcd.js';
 import lpwdCmd from './commands/lpwd.js';
+import mcpCmd from './commands/mcp.js';
 
-const envStatus = loadEnvAndConfig();
+let envStatus = loadEnvAndConfig();
 
 let cwd = '';
 let prevCwd = '';
@@ -77,61 +78,123 @@ const commands = {
   mv: mvCmd,
   lcd: lcdCmd,
   lpwd: lpwdCmd,
+  mcp: mcpCmd,
 };
 
-rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  completer: createCompleter(ctx, Object.keys(commands)),
-});
+// Mode Dispatcher
+const rawArgv = process.argv.slice(2);
 
-// Load persistent history across sessions
-rl.history = loadHistory();
-
-// Prune history file on exit
-process.on('exit', () => pruneHistory());
-
-if (envStatus.configured) {
-  printer.println(printer.dim(`Connected to Cloudinary account: ${chalk.bold(envStatus.cloud_name)} (${envStatus.source})`));
-  printer.println(printer.dim('Type "help" for commands, "config" for account details.\n'));
+if (rawArgv.includes('--mcp')) {
+  // Mode 3: Native MCP Server (delegates to lib/mcp.js in Phase 7)
+  const { runMcpServer } = await import('./lib/mcp.js');
+  await runMcpServer(ctx);
+} else if (rawArgv.length > 0) {
+  // Mode 2: Headless CLI Mode
+  await runHeadlessCli(rawArgv);
 } else {
-  printer.println(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
-  printer.println(chalk.yellow('│') + chalk.bold(' Welcome to Cloudinary Shell (cldsh)!                        ') + chalk.yellow('│'));
-  printer.println(chalk.yellow('│') + ' No Cloudinary account connected yet.                        ' + chalk.yellow('│'));
-  printer.println(chalk.yellow('│') + ' Run ' + chalk.cyan('login') + ' to connect your credentials, or set in .env.    ' + chalk.yellow('│'));
-  printer.println(chalk.yellow('└─────────────────────────────────────────────────────────────┘\n'));
+  // Mode 1: Interactive REPL Mode
+  runRepl();
 }
 
-function ask() { rl.question(getPrompt(), onLine); }
-
-async function onLine(line) {
-  const trimmed = line.trim();
-  if (trimmed) {
-    appendHistoryLine(trimmed);
-  }
-
+async function runHeadlessCli(argv) {
+  const line = argv.map(a => a.includes(' ') ? `"${a}"` : a).join(' ');
   const { cmd, args, flags } = parseLine(line);
-  try {
-    if (!cmd) return ask();
-    if (cmd === 'exit' || cmd === 'quit') { rl.close(); process.exit(0); return; }
-    const run = commands[cmd];
-    if (!run) {
-      printer.println(printer.warn(`Unknown command: ${cmd}`));
-      printer.println(printer.dim('Type "help" to see available commands.'));
-    } else {
-      // If not configured and command requires Cloudinary network access, guide user to login
-      const offlineCommands = ['help', 'login', 'config', 'exit', 'quit', 'pwd', 'lpwd', 'lcd'];
-      if (!isConfigured() && !offlineCommands.includes(cmd)) {
-        printer.println(printer.warn(`Not connected to a Cloudinary account.`));
-        printer.println(printer.dim(`Type "login" to connect your account or "config" for options.`));
-      } else {
-        await run(ctx, args, flags);
-      }
-    }
-  } catch (e) {
-    printer.println(printer.error(e?.message || String(e)));
+
+  // Profile override flag
+  if (flags.profile) {
+    envStatus = loadEnvAndConfig({ profileName: String(flags.profile) });
+    currentCloud = envStatus.cloud_name || '';
   }
+
+  if (flags.help || cmd === 'help' || cmd === '--help' || cmd === '-h') {
+    await helpCmd(ctx);
+    process.exit(0);
+  }
+
+  if (flags.version || cmd === '--version') {
+    console.log('1.0.0');
+    process.exit(0);
+  }
+
+  if (!cmd) {
+    process.exit(0);
+  }
+
+  const run = commands[cmd];
+  if (!run) {
+    process.stderr.write(`Unknown command: ${cmd}. Run "cldsh --help" for available commands.\n`);
+    process.exit(1);
+  }
+
+  const offlineCommands = ['help', 'login', 'config', 'pwd', 'lpwd', 'lcd'];
+  if (!isConfigured() && !offlineCommands.includes(cmd)) {
+    process.stderr.write('Error: Not connected to a Cloudinary account. Run "cldsh login" or set CLOUDINARY_URL in .env\n');
+    process.exit(1);
+  }
+
+  try {
+    await run(ctx, args, flags);
+    process.exit(0);
+  } catch (e) {
+    process.stderr.write(`Error: ${e?.message || String(e)}\n`);
+    process.exit(1);
+  }
+}
+
+function runRepl() {
+  rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    completer: createCompleter(ctx, Object.keys(commands)),
+  });
+
+  // Load persistent history across sessions
+  rl.history = loadHistory();
+
+  // Prune history file on exit
+  process.on('exit', () => pruneHistory());
+
+  if (envStatus.configured) {
+    printer.println(printer.dim(`Connected to Cloudinary account: ${chalk.bold(envStatus.cloud_name)} (${envStatus.source})`));
+    printer.println(printer.dim('Type "help" for commands, "config" for account details.\n'));
+  } else {
+    printer.println(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
+    printer.println(chalk.yellow('│') + chalk.bold(' Welcome to Cloudinary Shell (cldsh)!                        ') + chalk.yellow('│'));
+    printer.println(chalk.yellow('│') + ' No Cloudinary account connected yet.                        ' + chalk.yellow('│'));
+    printer.println(chalk.yellow('│') + ' Run ' + chalk.cyan('login') + ' to connect your credentials, or set in .env.    ' + chalk.yellow('│'));
+    printer.println(chalk.yellow('└─────────────────────────────────────────────────────────────┘\n'));
+  }
+
+  function ask() { rl.question(getPrompt(), onLine); }
+
+  async function onLine(line) {
+    const trimmed = line.trim();
+    if (trimmed) {
+      appendHistoryLine(trimmed);
+    }
+
+    const { cmd, args, flags } = parseLine(line);
+    try {
+      if (!cmd) return ask();
+      if (cmd === 'exit' || cmd === 'quit') { rl.close(); process.exit(0); return; }
+      const run = commands[cmd];
+      if (!run) {
+        printer.println(printer.warn(`Unknown command: ${cmd}`));
+        printer.println(printer.dim('Type "help" to see available commands.'));
+      } else {
+        const offlineCommands = ['help', 'login', 'config', 'exit', 'quit', 'pwd', 'lpwd', 'lcd'];
+        if (!isConfigured() && !offlineCommands.includes(cmd)) {
+          printer.println(printer.warn(`Not connected to a Cloudinary account.`));
+          printer.println(printer.dim(`Type "login" to connect your account or "config" for options.`));
+        } else {
+          await run(ctx, args, flags);
+        }
+      }
+    } catch (e) {
+      printer.println(printer.error(e?.message || String(e)));
+    }
+    ask();
+  }
+
   ask();
 }
-
-ask();

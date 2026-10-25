@@ -8,7 +8,7 @@
 
 Turn your Cloudinary account into a native AI tool for **Claude Desktop**, **Cursor IDE**, and **Claude Code** via the Model Context Protocol (MCP) — while providing developers with an interactive Unix-style virtual filesystem shell and headless CLI for CI/CD pipelines.
 
-> 🤖 **Working on a project that needs Cloudinary?** Pass [**`CLOUDINARY_GUIDE.md`**](CLOUDINARY_GUIDE.md) or [**`LLM_GUIDE.md`**](LLM_GUIDE.md) to your AI agent for complete integration patterns (Next.js, React, Node.js, Python), URL transformation rules, security standards, and `cldsh` CLI workflows.
+> 🤖 **Working on a project that needs Cloudinary?** Pass [**`INTEGRATION.md`**](INTEGRATION.md) to your AI agent or engineering team for complete integration patterns (Next.js, React, Node.js, Python), transformation recipes, and `cldsh` workflows.
 
 ---
 

@@ -16,8 +16,7 @@
     "cldsh.js",
     "README.md",
     "LICENSE",
-    "CLOUDINARY_GUIDE.md",
-    "LLM_GUIDE.md"
+    "INTEGRATION.md"
   ],
   "keywords": [
     "cloudinary",

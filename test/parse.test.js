@@ -1,44 +1,59 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLine } from '../lib/parse.js';
+import { tokenize, parseArgs } from '../lib/parse.js';
+import { CldshError } from '../lib/errors.js';
 
-test('parseLine: empty input returns empty structure', () => {
-  assert.deepEqual(parseLine(''), { cmd: '', args: [], flags: {} });
-  assert.deepEqual(parseLine('   '), { cmd: '', args: [], flags: {} });
+const rm = {
+  name: 'rm',
+  flags: {
+    recursive: { type: 'boolean', short: 'r' },
+    force: { type: 'boolean', short: 'f' },
+    rt: { type: 'string', alias: ['resource-type'], values: ['all', 'image', 'video', 'raw'] },
+    'dry-run': { type: 'boolean' },
+  },
+};
+const tree = { name: 'tree', flags: { depth: { type: 'number', short: 'd' }, max: { type: 'number' } } };
+
+test('tokenize: quotes group words and are removed, also inside a token', () => {
+  assert.deepEqual(tokenize('upload "my pictures/hero image.png" \'hero banner\''), ['upload', 'my pictures/hero image.png', 'hero banner']);
+  assert.deepEqual(tokenize('url logo --t="f_auto,q_auto"'), ['url', 'logo', '--t=f_auto,q_auto']);
+  assert.deepEqual(tokenize('rm a\\ b'), ['rm', 'a b']);
+  assert.deepEqual(tokenize('   '), []);
 });
 
-test('parseLine: basic command without args', () => {
-  const res = parseLine('ls');
-  assert.equal(res.cmd, 'ls');
-  assert.deepEqual(res.args, []);
-  assert.deepEqual(res.flags, {});
+test('tokenize: unterminated quote is a usage error', () => {
+  assert.throws(() => tokenize('ls "apps'), (e) => e instanceof CldshError && e.exitCode === 2);
 });
 
-test('parseLine: strips quotes from flag values', () => {
-  const res = parseLine('url logo --t="f_auto,q_auto,w_800"');
-  assert.equal(res.cmd, 'url');
-  assert.deepEqual(res.args, ['logo']);
-  assert.equal(res.flags.t, 'f_auto,q_auto,w_800');
+test('parseArgs: a boolean short flag never swallows the next positional', () => {
+  assert.deepEqual(parseArgs(['-r', 'folder'], rm), { args: ['folder'], flags: { recursive: true } });
+  assert.deepEqual(parseArgs(['--dry-run', 'cld*'], rm), { args: ['cld*'], flags: { 'dry-run': true } });
 });
 
-test('parseLine: handles short flag clustering like -rf', () => {
-  const res = parseLine('rm -rf apps/my-app');
-  assert.equal(res.cmd, 'rm');
-  assert.deepEqual(res.args, ['apps/my-app']);
-  assert.equal(res.flags.r, true);
-  assert.equal(res.flags.f, true);
+test('parseArgs: clusters, value flags and aliases', () => {
+  assert.deepEqual(parseArgs(['-rf', 'apps/old'], rm).flags, { recursive: true, force: true });
+  assert.equal(parseArgs(['-d', '2'], tree).flags.depth, 2);
+  assert.equal(parseArgs(['-d2'], tree).flags.depth, 2);
+  assert.equal(parseArgs(['--max=50'], tree).flags.max, 50);
+  assert.equal(parseArgs(['--resource-type', 'video', 'x'], rm).flags.rt, 'video');
 });
 
-test('parseLine: coerces numbers and booleans', () => {
-  const res = parseLine('tree -d 3 --signed=true --max=50');
-  assert.equal(res.cmd, 'tree');
-  assert.equal(res.flags.d, 3);
-  assert.equal(res.flags.signed, true);
-  assert.equal(res.flags.max, 50);
+test('parseArgs: --no-<flag> negates, -- ends options', () => {
+  assert.equal(parseArgs(['--no-recursive'], rm).flags.recursive, false);
+  assert.deepEqual(parseArgs(['--', '-weird-name'], rm).args, ['-weird-name']);
 });
 
-test('parseLine: preserves quotes with spaces in arguments', () => {
-  const res = parseLine('upload "my pictures/hero image.png" "hero banner"');
-  assert.equal(res.cmd, 'upload');
-  assert.deepEqual(res.args, ['my pictures/hero image.png', 'hero banner']);
+test('parseArgs: invalid input is a usage error with a hint', () => {
+  const usage = (fn) => assert.throws(fn, (e) => e instanceof CldshError && e.exitCode === 2);
+  usage(() => parseArgs(['--recursiv'], rm));
+  usage(() => parseArgs(['-x'], rm));
+  usage(() => parseArgs(['--rt=gif'], rm));
+  usage(() => parseArgs(['-d', 'two'], tree));
+  usage(() => parseArgs(['--max'], tree));
+  try { parseArgs(['--recursiv'], rm); } catch (e) { assert.match(e.hint, /--recursive/); }
+});
+
+test('parseArgs: global flags are accepted by every command', () => {
+  const { flags } = parseArgs(['--json', '--profile', 'prod', '-h'], tree);
+  assert.deepEqual(flags, { json: true, profile: 'prod', help: true });
 });

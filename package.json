@@ -1,14 +1,14 @@
 {
   "name": "cloudinary-shell",
-  "version": "1.0.0",
-  "description": "A powerful interactive Cloudinary shell (cldsh) with navigation, recursive upload, image preview, transformations, and multi-profile support",
+  "version": "2.0.0",
+  "description": "Cloudinary MCP server, interactive shell and scriptable CLI (cldsh): browse, upload, download, move and delete assets safely in fixed and dynamic folder modes",
   "type": "module",
   "bin": {
     "cldsh": "cldsh.js",
     "cloudinary-shell": "cldsh.js"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --import ./test/helpers/isolate-home.mjs --test test/*.test.js"
   },
   "files": [
     "commands",
@@ -16,14 +16,19 @@
     "cldsh.js",
     "README.md",
     "LICENSE",
-    "INTEGRATION.md"
+    "INTEGRATION.md",
+    "CHANGELOG.md"
   ],
   "keywords": [
     "cloudinary",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude",
+    "cursor",
     "shell",
     "cli",
     "repl",
-    "interactive",
     "terminal",
     "cldsh"
   ],
@@ -39,9 +44,9 @@
   "homepage": "https://github.com/Sheldon1999/cldsh-Cloudinary-Shell#readme",
   "dependencies": {
     "chalk": "^5.3.0",
-    "cloudinary": "^1.41.3"
+    "cloudinary": "^2.11.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

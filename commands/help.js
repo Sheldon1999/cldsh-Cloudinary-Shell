@@ -1,51 +1,73 @@
-import { println, strong, dim } from '../lib/printer.js';
+import { COMMAND_MODULES, COMMANDS } from './index.js';
+import { GLOBAL_FLAGS } from '../lib/parse.js';
+import { usageError } from '../lib/errors.js';
 
-export default async function help(_ctx) {
-  println(strong('Commands:'));
-  println('  help                                  Show this help');
-  println('  login [profile]                       Connect Cloudinary credentials (URL or keys)');
-  println('  config [ls|use <name>|rm <name>]      View or switch active credentials profile');
-  println('  ls [path|pattern] [-l] [--rt=image]   List folders/files (supports wildcards: cld*, *.png)');
-  println('  cd [folder|..|/|~|-]                  Change Cloudinary folder (.. up, / or ~ root, - previous)');
-  println('  pwd                                   Show current Cloudinary folder path');
-  println('  lcd [local_path]                      Change local directory on machine (defaults to ~)');
-  println('  lpwd                                  Show current local directory on machine');
-  println('  mkdir <name>                          Create a subfolder in Cloudinary');
-  println('  upload <path|dir> [name] [-r] [-o] [--rt=image] [--dry-run] [-v]');
-  println('                                        Upload file or directory (-r recursive with concurrency)');
-  println('  download <name|pattern> [dest] [--rt=image]');
-  println('                                        Download asset(s) matching name or wildcard to local disk');
-  println('  mv <source> <target> [-o] [--dry-run]');
-  println('                                        Move or rename asset / move across folders');
-  println('  info <name|public_id> [--rt=image] [-v]');
-  println('                                        Inspect asset metadata (dimensions, size, tags)');
-  println('  open <name|public_id> [--rt=image] [--t="..."]');
-  println('                                        Open asset URL in default web browser');
-  println('  view <name|public_id> [--rt=image] [--t="..."]');
-  println('                                        Display image directly inside terminal (alias: preview)');
-  println('  url <name|pattern> [--rt=image] [--t="..."] [--signed] [--type=...]');
-  println('                                        Print CDN URL(s) for name or wildcard pattern');
-  println('  rm <name|pattern> [--rt=image] [--dry-run]');
-  println('                                        Remove asset(s) matching name or wildcard (e.g. rm cld*)');
-  println('  rm -rf <folder|pattern> [--dry-run]   Remove folder(s) and all contents (supports wildcards)');
-  println('  tree [-d N] [--rt=image]              Show folder tree (depth N)');
-  println('  exit | quit                           Exit the shell');
-  println('\nFlags:');
-  println('  -r, --recursive   Recursive directory upload mirroring subfolders');
-  println('  --dry-run         Preview actions without modifying or deleting assets');
-  println('  -l                Long listing (size & dimensions) for ls');
-  println('  -o                Overwrite on upload or rename (default true for upload)');
-  println('  --rt=...          Resource type: image | video | raw (default image)');
-  println('  -d N              Max depth for tree (default infinite)');
-  println('  -v                Verbose output (prints raw API responses)');
-  println('  --t="..."         Cloudinary transform string for url (e.g. "f_auto,q_auto,w_800")');
-  println('  --signed          Generate signed URL for private/authenticated assets');
-  println('\nSecurity & Profiles:');
-  println('  Credentials stored in ~/.config/cldsh/credentials.json with mode 0600.');
-  println('  Precedence: Active Profile > Env Vars > Local .env > Global Profiles.');
-  println('\nTips:');
-  println('  Wildcards (* and ?) are supported in rm, ls, download, and url (e.g. rm cld*, ls *.png).');
-  println('  Press <Tab> for autocomplete on commands, folders, and flags.');
-  println('  Use Up/Down arrows to navigate persistent command history.');
-  println('  Use folders like namespaces: apps/your-app/dev/images');
+export const spec = {
+  name: 'help',
+  usage: 'help [command]',
+  summary: 'Show commands, or the options of one command',
+  flags: {},
+  offline: true,
+};
+
+function flagLines(flags) {
+  return Object.entries(flags).map(([name, def]) => {
+    const value = def.type === 'boolean' ? '' : `=${def.placeholder || def.type}`;
+    const short = def.short ? `-${def.short}, ` : '    ';
+    return { left: `${short}--${name}${value}`, right: def.description || '' };
+  });
+}
+
+export default async function help(_ctx, args) {
+  if (args[0]) {
+    const mod = COMMANDS.get(args[0]);
+    if (!mod) throw usageError(`Unknown command: ${args[0]}`);
+    const s = mod.spec;
+    return {
+      command: s.name,
+      usage: s.usage,
+      summary: s.summary,
+      aliases: s.aliases || [],
+      flags: flagLines(s.flags || {}),
+      notes: s.notes || [],
+    };
+  }
+  return {
+    commands: COMMAND_MODULES.map(m => ({ name: m.spec.name, usage: m.spec.usage, summary: m.spec.summary, aliases: m.spec.aliases || [] }))
+      .concat([{ name: 'exit', usage: 'exit | quit', summary: 'Leave the shell', aliases: ['quit'] }]),
+    global_flags: flagLines(GLOBAL_FLAGS),
+  };
+}
+
+export function render(result, ctx) {
+  const { out } = ctx;
+  const c = out.c;
+  const col = (rows) => {
+    const w = Math.min(44, Math.max(...rows.map(r => r.left.length)) + 2);
+    for (const r of rows) {
+      if (r.left.length + 2 > w) { out.print(`  ${r.left}`); out.print(`  ${' '.repeat(w)}${r.right}`); }
+      else out.print(`  ${r.left.padEnd(w)}${r.right}`);
+    }
+  };
+
+  if (result.command) {
+    out.print(c.bold(`Usage: ${result.usage}`));
+    out.print(`  ${result.summary}`);
+    if (result.aliases.length) out.print(`  Alias: ${result.aliases.join(', ')}`);
+    if (result.flags.length) { out.print(''); out.print(c.bold('Options:')); col(result.flags); }
+    for (const n of result.notes) out.print(`\n${n}`);
+    return;
+  }
+
+  out.print(c.bold('Commands:'));
+  col(result.commands.map(cmd => ({ left: cmd.usage, right: cmd.summary + (cmd.aliases.length ? ` (alias: ${cmd.aliases.join(', ')})` : '') })));
+  out.print('');
+  out.print(c.bold('Options for every command:'));
+  col(result.global_flags);
+  out.print('');
+  out.print(c.bold('Tips:'));
+  out.print('  "help <command>" shows all options of a command.');
+  out.print('  Quote wildcards when running single commands from your shell: cldsh rm \'cld*\'.');
+  out.print('  Paths are relative to the current folder; start with / for the root.');
+  out.print('  Credentials: --profile / config use  >  CLOUDINARY_URL  >  ./.env  >  saved default profile.');
 }

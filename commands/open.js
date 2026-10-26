@@ -1,6 +1,20 @@
-import { v2 as cloudinary } from 'cloudinary';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
+import { buildAssetUrl } from '../lib/actions/url.js';
+import { usageError } from '../lib/errors.js';
+import { RT_FLAG, TYPE_FLAG, resourceTypeFrom } from '../lib/flags.js';
+
+export const spec = {
+  name: 'open',
+  usage: 'open <name|public_id|asset_id:ID> [--t="<transformation>"] [--rt=image|video|raw] [--type=upload]',
+  summary: 'Open an asset in the browser',
+  flags: {
+    t: { type: 'string', placeholder: 'transformation', description: 'Transformation to apply, e.g. --t="w_300,c_fill"' },
+    ...RT_FLAG,
+    ...TYPE_FLAG,
+  },
+  notes: ['When the output is not a terminal (scripts, pipes), the URL is printed instead of opening a browser.'],
+};
 
 export function launchUrl(url) {
   let cmd;
@@ -16,31 +30,23 @@ export function launchUrl(url) {
     args = [url];
   }
   const child = spawn(cmd, args, { detached: true, stdio: 'ignore' });
+  // A missing opener (e.g. no xdg-open) must not crash the shell; the URL is printed anyway.
+  child.on('error', () => {});
   child.unref();
 }
 
-export default async function openCmd(ctx, args = [], flags = {}) {
-  const { utils, printer } = ctx;
-  const targetArg = args[0];
+export default async function openCmd(ctx, args, flags) {
+  if (!args[0]) throw usageError('open needs an asset name', spec.usage);
+  const backend = await ctx.backend();
+  const ref = await backend.resolveAsset(ctx.cwd, args[0], { resourceType: resourceTypeFrom(flags), deliveryType: flags.type });
+  // Private and authenticated assets are only viewable through signed URLs.
+  const url = buildAssetUrl(backend, ref, { transformation: flags.t, signed: ref.type !== 'upload' });
+  const launch = !flags.json && ctx.session.mode !== 'mcp' && Boolean(process.stdout.isTTY);
+  if (launch) launchUrl(url);
+  return { public_id: ref.public_id, resource_type: ref.resource_type, type: ref.type, url, launched: launch };
+}
 
-  if (!targetArg) {
-    return printer.println(printer.warn('open <name|public_id> [--rt=image] [--t="..."]'));
-  }
-
-  const publicId = targetArg.includes('/') ? targetArg : utils.join(ctx.cwd, targetArg);
-  const rtype = flags.rt || flags['resource-type'] || 'image';
-
-  try {
-    const res = await cloudinary.api.resource(publicId, { resource_type: rtype });
-    let targetUrl = res.secure_url || res.url;
-    if (flags.t) {
-      const t = String(flags.t).replace(/^\/+|\/+$/g, '');
-      targetUrl = targetUrl.replace('/upload/', `/upload/${t}/`);
-    }
-
-    printer.println(printer.ok(`Opening: ${targetUrl}`));
-    launchUrl(targetUrl);
-  } catch (e) {
-    printer.println(printer.error(e?.message || String(e)));
-  }
+export function render(result, ctx) {
+  if (result.launched) ctx.out.success(`Opening: ${result.url}`);
+  else ctx.out.print(result.url);
 }

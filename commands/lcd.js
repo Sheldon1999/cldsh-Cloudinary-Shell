@@ -1,32 +1,32 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { resolveLocal } from '../lib/paths.js';
+import { CldshError, CODES } from '../lib/errors.js';
 
-export default async function lcd(ctx, args = []) {
-  const { printer } = ctx;
-  const target = args[0];
+export const spec = {
+  name: 'lcd',
+  usage: 'lcd [local_path]',
+  summary: 'Change local directory on this machine (default: home)',
+  flags: {},
+};
 
-  let dest;
-  if (!target || target === '~') {
-    dest = os.homedir();
-  } else if (target.startsWith('~')) {
-    dest = path.join(os.homedir(), target.slice(1));
-  } else {
-    dest = path.resolve(process.cwd(), target);
-  }
-
+export default async function lcd(ctx, args) {
+  const dest = resolveLocal(args[0] || '~');
+  let stat;
   try {
-    if (!fs.existsSync(dest)) {
-      return printer.println(printer.warn(`No such local directory: ${target}`));
-    }
-    const stat = fs.statSync(dest);
-    if (!stat.isDirectory()) {
-      return printer.println(printer.warn(`Not a directory: ${target}`));
-    }
-    process.chdir(dest);
-    printer.println(printer.ok(`Local directory: ${process.cwd()}`));
-  } catch (e) {
-    printer.println(printer.error(`Failed to change local directory: ${e?.message || String(e)}`));
+    stat = fs.statSync(dest);
+  } catch {
+    throw new CldshError(CODES.NOT_FOUND, `No such local directory: ${args[0]}`);
+  }
+  if (!stat.isDirectory()) throw new CldshError(CODES.LOCAL, `Not a directory: ${args[0]}`);
+  process.chdir(dest);
+  return { cwd: process.cwd(), dotenv: fs.existsSync(path.join(dest, '.env')) };
+}
+
+export function render(result, ctx) {
+  ctx.out.success(`Local directory: ${result.cwd}`);
+  if (result.dotenv) {
+    ctx.out.info('This directory has a .env file; the active Cloudinary account is unchanged. Restart cldsh here to use it.');
   }
 }

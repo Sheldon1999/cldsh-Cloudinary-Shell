@@ -1,24 +1,30 @@
-export default async function cd(ctx, args = []) {
-  const { utils, printer } = ctx;
+import { resolveRemote } from '../lib/paths.js';
+import { usageError } from '../lib/errors.js';
+
+export const spec = {
+  name: 'cd',
+  usage: 'cd [folder|..|/|~|-]',
+  summary: 'Change Cloudinary folder (.. up, / or ~ root, - previous)',
+  flags: {},
+};
+
+export default async function cd(ctx, args) {
+  const { session } = ctx;
+  if (session.mode !== 'repl') throw usageError('cd only works inside the interactive shell', 'pass full paths to single commands instead');
   const target = args[0];
-
-  // cd with no args or cd ~ or cd / goes to root
-  if (!target || target === '~' || target === '/') {
-    return ctx.setCwd('');
-  }
-
-  // cd - toggles to previous directory
   if (target === '-') {
-    const prev = ctx.prevCwd || '';
-    ctx.setCwd(prev);
-    printer.println('/' + (prev || ''));
-    return;
+    session.setCwd(session.prevCwd || '');
+    return { cwd: session.cwd, printed: true };
   }
+  const next = resolveRemote(session.cwd, target || '/');
+  if (next) {
+    const backend = await ctx.backend();
+    await backend.requireFolder(next, target);
+  }
+  session.setCwd(next);
+  return { cwd: next };
+}
 
-  const next = utils.resolvePath(ctx.cwd, target);
-  const exists = await utils.folderExists(next);
-  if (!exists) {
-    return printer.println(printer.warn(`No such folder: ${target}`));
-  }
-  ctx.setCwd(next);
+export function render(result, ctx) {
+  if (result.printed) ctx.out.print('/' + result.cwd);
 }

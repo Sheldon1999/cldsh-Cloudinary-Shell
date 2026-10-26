@@ -1,30 +1,26 @@
 import { actionInfo } from '../lib/actions/info.js';
+import { formatInfo } from '../lib/printer.js';
+import { usageError } from '../lib/errors.js';
+import { RT_FLAG, TYPE_FLAG, resourceTypeFrom } from '../lib/flags.js';
 
-export default async function info(ctx, args = [], flags = {}) {
-  const { printer } = ctx;
-  const targetArg = args[0];
+export const spec = {
+  name: 'info',
+  usage: 'info <name|public_id|asset_id:ID> [--rt=image|video|raw] [--type=upload] [-v]',
+  summary: 'Inspect asset metadata (dimensions, size, tags)',
+  flags: {
+    verbose: { type: 'boolean', short: 'v', description: 'Print the full API response' },
+    ...RT_FLAG,
+    ...TYPE_FLAG,
+  },
+};
 
-  if (!targetArg) {
-    return printer.println(printer.warn('info <name|public_id> [--rt=image] [--json] [-v]'));
-  }
+export default async function info(ctx, args, flags) {
+  if (!args[0]) throw usageError('info needs an asset name', spec.usage);
+  const backend = await ctx.backend();
+  return actionInfo(backend, { cwd: ctx.cwd, target: args[0], resourceType: resourceTypeFrom(flags), deliveryType: flags.type });
+}
 
-  const rtype = flags.rt || flags['resource-type'] || 'image';
-
-  try {
-    const res = await actionInfo(targetArg, {
-      cwd: ctx.cwd,
-      resourceType: rtype,
-    });
-
-    if (flags.json || flags.v) {
-      console.log(JSON.stringify(res, null, 2));
-      return res;
-    }
-
-    printer.printInfoCard(res);
-    return res;
-  } catch (e) {
-    printer.println(printer.error(e?.message || String(e)));
-    if (flags.json) throw e;
-  }
+export function render(result, ctx) {
+  if (ctx.flags.verbose) ctx.out.print(JSON.stringify(result, null, 2));
+  else ctx.out.print(formatInfo(result, ctx.out.c));
 }

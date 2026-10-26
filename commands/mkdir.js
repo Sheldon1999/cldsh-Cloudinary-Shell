@@ -1,13 +1,25 @@
+import { resolveRemote } from '../lib/paths.js';
+import { usageError } from '../lib/errors.js';
+
+export const spec = {
+  name: 'mkdir',
+  usage: 'mkdir <folder>...',
+  summary: 'Create folders (missing parents are created too)',
+  flags: {},
+};
+
 export default async function mkdir(ctx, args) {
-  const { utils, printer } = ctx;
-  const name = args[0];
-  if (!name) return printer.println(printer.warn('mkdir <name>'));
-  const full = utils.join(ctx.cwd, name);
-  try {
-    await utils.createFolder(full);
-    ctx.invalidateFolderCache?.();
-    printer.println(printer.ok(`Created folder: ${full}`));
-  } catch (e) {
-    printer.println(printer.error(e?.message || String(e)));
+  if (!args.length) throw usageError('mkdir needs a folder name', spec.usage);
+  const backend = await ctx.backend();
+  const created = [];
+  for (const a of args) {
+    const path = resolveRemote(ctx.cwd, a);
+    if (!path) throw usageError('The root folder already exists');
+    created.push((await backend.createFolder(path)).path);
   }
+  return { created };
+}
+
+export function render(result, ctx) {
+  for (const p of result.created) ctx.out.success(`Created folder: ${p}`);
 }

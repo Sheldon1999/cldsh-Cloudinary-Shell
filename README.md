@@ -1,53 +1,50 @@
 # Cloudinary Shell (`cldsh`)
 
-### The Native Model Context Protocol (MCP) Server & Interactive Terminal Shell for Cloudinary
+### MCP server, interactive shell and scriptable CLI for Cloudinary
 
 [![npm version](https://img.shields.io/npm/v/cloudinary-shell.svg)](https://www.npmjs.com/package/cloudinary-shell)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
 
-Turn your Cloudinary account into a native AI tool for **Claude Desktop**, **Cursor IDE**, and **Claude Code** via the Model Context Protocol (MCP) — while providing developers with an interactive Unix-style virtual filesystem shell and headless CLI for CI/CD pipelines.
+`cldsh` lets you work with a Cloudinary account like a file system:
 
-> 🤖 **Working on a project that needs Cloudinary?** Pass [**`INTEGRATION.md`**](INTEGRATION.md) to your AI agent or engineering team for complete integration patterns (Next.js, React, Node.js, Python), transformation recipes, and `cldsh` workflows.
+- **AI agents** (Claude Desktop, Claude Code, Cursor) get Cloudinary tools through the Model Context Protocol (MCP), with previews and confirmation before anything is deleted or replaced.
+- **Developers** get an interactive shell with folders, tab completion, history and inline image previews.
+- **Scripts and CI** get single commands with JSON output and meaningful exit codes.
+
+It works with both Cloudinary folder modes: **dynamic folders** (every account created since June 2024) and the older **fixed folders**. The mode is detected automatically.
+
+> Working on a project that uses Cloudinary? Give [`INTEGRATION.md`](INTEGRATION.md) to your AI agent or team: integration patterns (Next.js, React, Node.js, Python), transformation recipes and `cldsh` workflows.
 
 ---
 
-## ⚡ Quick Start
+## Quick start
 
-### 1. For AI Coding Agents (Native MCP Server)
-Add Cloudinary capabilities directly to Claude Desktop, Cursor, or Claude Code in seconds:
+Requires **Node.js 20 or newer** and a Cloudinary account (cloud name, API key and API secret, or a `CLOUDINARY_URL`).
 
 ```bash
-# Claude Code (Terminal AI)
+# AI agents: add the MCP server to Claude Code
 claude mcp add cloudinary npx -y cloudinary-shell --mcp
 
-# Or launch stdio server directly
-npx -y cloudinary-shell --mcp
-```
-
-### 2. For Developers (Interactive Terminal Shell)
-Launch an interactive virtual filesystem shell with tab-completion, persistent history, and inline terminal image rendering:
-
-```bash
+# Developers: open the interactive shell
 npx cloudinary-shell
+
+# Scripts: run one command
+npx cloudinary-shell ls products --json
 ```
 
-### 3. For CI/CD & Automation (Headless CLI)
-Execute single commands non-interactively with structured `--json` output for `jq` and deployment pipelines:
-
-```bash
-cldsh upload ./dist/assets -r --json
-```
+Install globally to get the shorter `cldsh` command: `npm install -g cloudinary-shell`.
 
 ---
 
-## 🔌 Native Model Context Protocol (MCP) Integration (For AI Agents)
+## MCP server (for AI agents)
 
-`cloudinary-shell` exposes **8 atomic tools** over standard `stdio` JSON-RPC 2.0. AI coding agents can inspect folders, upload assets, and generate responsive delivery URLs without hallucinating SDK namespaces or wasting context tokens.
+`cldsh --mcp` runs an MCP server over stdio (JSON-RPC 2.0). It supports protocol versions `2025-06-18`, `2025-03-26` and `2024-11-05`.
 
-### Client Setup Guides
+### Client setup
 
-#### Claude Desktop (`claude_desktop_config.json`)
+**Claude Desktop** (`claude_desktop_config.json`):
+
 ```json
 {
   "mcpServers": {
@@ -59,559 +56,246 @@ cldsh upload ./dist/assets -r --json
 }
 ```
 
-#### Cursor IDE
-Go to **Cursor Settings** → **Features** → **MCP Servers** → **Add New MCP Server**:
-- **Name**: `cloudinary`
-- **Type**: `command`
-- **Command**: `npx -y cloudinary-shell --mcp`
+**Claude Code**: `claude mcp add cloudinary npx -y cloudinary-shell --mcp`
 
-#### Claude Code (Anthropic Terminal CLI)
-```bash
-claude mcp add cloudinary npx -y cloudinary-shell --mcp
-```
+**Cursor**: Settings → MCP → Add new MCP server, type `command`, command `npx -y cloudinary-shell --mcp`.
 
-#### Test MCP Server Diagnostics (Built-in)
-Test your MCP server handshake, tool declarations, and live account connection with one command:
-```bash
-cldsh mcp
-```
+Check the setup with `cldsh mcp`: it runs the handshake, lists the tools and makes a live call on your account.
 
-### 🛠️ 8 Native MCP Tools Exposed to AI Models
+### Tools
 
-| Tool Name | Description | Key Arguments |
+| Tool | What it does | Main arguments |
 | :--- | :--- | :--- |
-| **`cloudinary_list`** | Browse folders & media assets with filtering | `path`, `resource_type`, `max` |
-| **`cloudinary_upload`** | Upload local file or directory (recursive & concurrent) | `local_path`, `folder`, `recursive`, `dry_run` |
-| **`cloudinary_get_url`** | Generate optimized delivery URLs & transformations | `public_id`, `transformation`, `signed` |
-| **`cloudinary_info`** | Inspect asset technical metadata (dimensions, size, tags) | `public_id`, `resource_type` |
-| **`cloudinary_delete`** | Delete assets or recursive folder purge | `target`, `recursive`, `dry_run` |
-| **`cloudinary_move`** | Rename or move assets across virtual folders | `source`, `target`, `overwrite`, `dry_run` |
-| **`cloudinary_tree`** | Directory tree hierarchy visualization | `folder`, `depth`, `resource_type` |
-| **`cloudinary_download`** | Download remote assets to local disk | `public_id`, `destination`, `resource_type` |
+| `cloudinary_list` | List folders and assets (wildcards allowed) | `path`, `resource_type`, `delivery_type`, `max` |
+| `cloudinary_tree` | Folder tree | `folder`, `depth`, `resource_type`, `max_files` |
+| `cloudinary_info` | Full metadata of one asset | `public_id`, `resource_type`, `delivery_type` |
+| `cloudinary_get_url` | Delivery URL, optionally transformed or signed | `public_id`, `transformation`, `signed`, `resource_type` |
+| `cloudinary_upload` | Upload a local file or directory | `local_path`, `name`, `folder`, `recursive`, `overwrite`, `resource_type`, `dry_run` |
+| `cloudinary_download` | Download assets to the local disk | `public_id`, `destination`, `overwrite`, `dry_run` |
+| `cloudinary_move` | Move or rename an asset or folder | `source`, `target`, `overwrite`, `change_public_id`, `dry_run` |
+| `cloudinary_delete` | Delete assets, or folders with `recursive` | `target`, `recursive`, `resource_type`, `dry_run` |
+| `cloudinary_mkdir` | Create a folder | `folder` |
+| `cloudinary_rename_folder` | Rename or move a folder (dynamic folder mode) | `from`, `to` |
+| `cloudinary_account` | Cloud name, folder mode, credential source, remaining API budget | — |
 
-*(Credentials are inherited automatically from `~/.config/cldsh/credentials.json` or `.env`)*.
+Every tool carries MCP annotations (read-only, destructive, idempotent), so clients can decide when to ask you.
+
+### Safety
+
+- **Two-step changes.** `cloudinary_delete`, `cloudinary_move`, `cloudinary_rename_folder`, and uploads that would replace existing assets first return a preview with a `confirm_token`. Nothing changes until the agent calls again with the same arguments and that token. Tokens are single-use, expire after 5 minutes and stop working if the account changes. `dry_run: true` only previews.
+- **Local files.** Uploads and downloads can only reach the folder the server was started in, the folders your MCP client shares as roots, and folders added with `--allow-path`. The cldsh credentials folder, `~/.ssh` and hidden files (unless named explicitly) are always refused. Downloads never overwrite a local file unless `overwrite: true`.
+- **Server options:**
+  - `--read-only`: only the read-only tools (list, tree, info, get_url, account).
+  - `--allow-path <dir>`: allow another local folder (repeatable).
+  - `--no-confirm`: run changes in one call, as in cldsh 1.x. Use only for trusted automation.
+
+```json
+"args": ["-y", "cloudinary-shell", "--mcp", "--read-only"]
+```
 
 ---
 
-## 💻 Headless CLI Mode (For Scripts, CI/CD, & Automation)
+## Command line (for scripts and CI)
 
-Pass commands directly as CLI arguments. Runs once, outputs data to `stdout`, errors to `stderr`, and exits with standard exit codes (`0` on success, `1` on error):
+Run any command directly: `cldsh <command> [arguments] [options]`.
+
+- Results go to **stdout**; progress, warnings and errors go to **stderr**.
+- `--json` prints machine-readable JSON on stdout (errors are printed as JSON on stderr).
+- **Exit codes:** `0` success, `1` error, `2` wrong usage, `3` partly failed (for example 2 of 50 uploads failed), `4` needs confirmation (add `--yes`) or was cancelled.
+- `--profile <name>` uses a saved profile for one command.
 
 ```bash
-# Upload a folder in CI/CD pipeline (e.g. GitHub Actions)
-cldsh upload ./dist/assets -r
+# Upload a build folder with subfolders
+cldsh upload ./dist/assets -r --to site/assets
 
-# Extract raw CDN URLs for all assets in a folder using jq
+# CDN URLs of every asset in a folder
 cldsh ls portfolio --json | jq -r '.files[].secure_url'
 
-# Find all assets larger than 100 KB
-cldsh ls portfolio --json | jq '.files[] | select(.bytes > 100000) | .public_id'
+# Assets larger than 100 KB
+cldsh ls portfolio --json | jq -r '.files[] | select(.bytes > 100000) | .public_id'
 
-# Safe dry-run preview in scripts
-cldsh rm cld* --dry-run
+# Preview a delete, then run it without the question
+cldsh rm 'old-*' --dry-run
+cldsh rm -r archive/2023 --yes
 ```
+
+> **Quote wildcards.** Your shell expands an unquoted `cld*` into local file names before `cldsh` sees it. Write `cldsh rm 'cld*'`. If every name given to `rm` exists in the local directory, `cldsh` refuses and reminds you.
 
 ---
 
-## 🖥️ Interactive Shell Features
-- Familiar shell-like prompt that shows the **current Cloudinary folder** (`[my-cloud]$~/current/folder`).
-- **Tab Autocompletion** for commands, folders, and flags.
-- **Persistent Command History** across sessions (Up / Down arrows).
-- `view` / `preview` renders images and video thumbnails **directly inside your terminal** (Warp, iTerm2, WezTerm, VS Code).
-- `ls -l` shows **Size (KB)**, **Dimensions (px)**, **Name**, **Type** with an aligned header.
-- `ls [path]` browse contents of arbitrary subfolders or parent folders.
-- `info` inspect comprehensive asset metadata (dimensions, size, tags, timestamps).
-- `download` save any Cloudinary asset to local disk.
-- `upload` from local files or directories, with `-r` (recursive upload with concurrency and collision handling).
-- `mv` rename assets or move them across folders (`mv hero archive/hero`).
-- `lcd` & `lpwd` navigate your local machine directory directly inside the shell.
-- `open` view asset URL in your default browser.
-- `tree` draws a **nice ASCII tree** with proper indentation.
-- `url` prints the CDN URL; optionally injects a transform string or signs private URLs.
-- `rm` and `rm -rf` delete assets or folders (supports **wildcards** like `rm cld*` or `rm *.png`).
-- `--dry-run` flag to preview batch uploads and deletions safely.
-- Supports `--rt` to browse **image/video/raw** assets.
----
-## Prereqs
-- **Node.js 18+**
-- A Cloudinary account (get `cloud_name`, `api_key`, `api_secret` or `CLOUDINARY_URL`)
+## Interactive shell
 
----
+Run `cldsh` with no arguments.
 
-## Authentication & Credentials
-
-`cldsh` supports multiple secure authentication methods with the following precedence:
-
-$$\text{Active Profile} \;\to\; \text{Environment Variables} \;\to\; \text{Local } .env \;\to\; \text{Global Config Store}$$
-
-### 1. Interactive Login (Recommended)
-Run `login` inside the shell (or pass your `CLOUDINARY_URL`):
-```bash
-$~ login
-
-# Or pass URL directly
-$~ login default "cloudinary://<api_key>:<api_secret>@<cloud_name>"
 ```
-Credentials are tested via ping and persisted securely to `~/.config/cldsh/credentials.json` with strict POSIX mode `0600` (owner read/write only).
+Connected to Cloudinary account: my-cloud (global credentials profile (default))
+[my-cloud]$~ cd products
+[my-cloud]$~/products ls -l
 
-### 2. Multi-Profile Switching
-Manage multiple accounts (e.g. dev, staging, prod):
-```bash
-$~ login staging "cloudinary://<key>:<secret>@<staging_cloud>"
-$~ login prod "cloudinary://<key>:<secret>@<prod_cloud>"
-
-$~ config ls
-  Saved Profiles:
-  * default (cloud: dev-assets)
-    staging (cloud: staging-assets)
-    prod (cloud: prod-assets)
-
-$~ config use prod
-Switched active profile to: prod [cloud: prod-assets]
-[prod-assets]$~
+      SIZE(KB)  DIMENSIONS(px)  NAME      FORMAT  TYPE
+      ────────  ──────────────  ────────  ──────  ─────
+           245  1200x630        hero      png     image
+            15  512x512         logo      svg     image
+          1830  1920x1080       promo     mp4     video
 ```
 
-### 3. Environment Variable or Local `.env`
-Alternatively, set `CLOUDINARY_URL` in your shell or a local `.env`:
-```bash
-export CLOUDINARY_URL="cloudinary://<key>:<secret>@<cloud_name>"
-```
----
-
-## Usage
-
-When launched, you'll see:
-```
-Cloudinary Shell — type "help" for commands.
-$~
-```
-
-Prompt shows current folder:
-
-* Root: `$~ `
-* Inside a folder: `$~/apps/my-app `
+- The prompt shows the account (and profile) and the current folder.
+- Tab completes commands, options, folder paths (`cd apps/<Tab>`) and asset names.
+- History is kept across sessions in `~/.cldsh_history` (private file; lines with credentials are never saved).
+- Paths are relative to the current folder; `/` or `~` is the root, `..` goes up, `cd -` goes back.
+- `help` lists all commands; `help <command>` lists all options of one command.
 
 ---
 
 ## Commands
 
-### help
+| Command | What it does |
+| :--- | :--- |
+| `login [profile] [URL] [--stdin]` | Connect an account and save it as a profile (checked with Cloudinary first) |
+| `config [ls \| use <profile> \| rm <profile>]` | Show the active account and which sources it overrides; list, switch or remove profiles |
+| `ls [path\|pattern] [-l]` | List folders and assets |
+| `cd`, `pwd` | Change and show the current Cloudinary folder (shell only) |
+| `lcd`, `lpwd` | Change and show the local directory |
+| `mkdir <folder>...` | Create folders (parents included) |
+| `upload <path> [name] [--to folder] [-r]` | Upload a file or a directory |
+| `download <name\|pattern>... [destination] [-f]` | Download assets |
+| `mv <source> <target> [-o] [--public-id]` | Move or rename an asset or folder |
+| `info <name>` | Asset metadata (`-v` for the full API response) |
+| `url <name\|pattern>... [--t=...] [--signed]` | Delivery URLs |
+| `view <name>` (alias `preview`) | Show an image or video thumbnail in the terminal |
+| `open <name>` | Open an asset in the browser |
+| `rm [-r] <name\|folder\|pattern>... [-y]` | Delete assets, or folders with `-r` |
+| `tree [folder] [-d N]` | Folder tree |
+| `quota` | Remaining Admin API requests this hour and the folder mode |
+| `mcp` | Check the MCP server |
 
-Show all commands & flags.
+Options shared by many commands:
+
+| Option | Meaning |
+| :--- | :--- |
+| `--rt=image\|video\|raw\|all` | Resource type. Listings show all types by default. |
+| `--type=upload\|private\|authenticated` | Delivery type |
+| `--dry-run` | Show what would happen without changing anything |
+| `-y`, `--yes` | Don't ask for confirmation |
+| `--json` | JSON output |
+
+Assets can be named by their name in the current folder, by path (`products/hero`), by public ID, or as `asset_id:<id>`. If a name matches several assets (for example an image and a video called `intro`), `cldsh` lists them; add `--rt` or use the public ID.
+
+### Uploading
 
 ```
-$~ help
-Commands:
-  help                                  Show this help
-  login [profile]                       Connect Cloudinary credentials (URL or keys)
-  config [ls|use <name>|rm <name>]      View or switch active credentials profile
-  ls [path|pattern] [-l] [--rt=image]   List folders/files (supports wildcards: cld*, *.png)
-  cd [folder|..|/|~|-]                  Change Cloudinary folder (.. up, / or ~ root, - previous)
-  pwd                                   Show current Cloudinary folder path
-  lcd [local_path]                      Change local directory on machine (defaults to ~)
-  lpwd                                  Show current local directory on machine
-  mkdir <name>                          Create a subfolder in Cloudinary
-  upload <path|dir> [name] [-r] [-o] [--rt=image] [--dry-run] [-v]
-                                        Upload file or directory (-r recursive with concurrency)
-  download <name|pattern> [dest] [--rt=image]
-                                        Download asset(s) matching name or wildcard to local disk
-  mv <source> <target> [-o] [--dry-run]
-                                        Move or rename asset / move across folders
-  info <name|public_id> [--rt=image] [-v]
-                                        Inspect asset metadata (dimensions, size, tags)
-  open <name|public_id> [--rt=image] [--t="..."]
-                                        Open asset URL in default web browser
-  view <name|public_id> [--rt=image] [--t="..."]
-                                        Display image directly inside terminal (alias: preview)
-  url <name|pattern> [--rt=image] [--t="..."] [--signed] [--type=...]
-                                        Print CDN URL(s) for name or wildcard pattern
-  rm <name|pattern> [--rt=image] [--dry-run]
-                                        Remove asset(s) matching name or wildcard (e.g. rm cld*)
-  rm -rf <folder|pattern> [--dry-run]   Remove folder(s) and all contents (supports wildcards)
-  tree [-d N] [--rt=image]              Show folder tree (depth N)
-  exit | quit                           Exit the shell
+[my-cloud]$~/products upload ~/Pictures/hero.png
+Uploaded (created): https://res.cloudinary.com/my-cloud/image/upload/v1730000000/products/hero.png
+
+[my-cloud]$~ upload ./media -r --to campaigns/fall
+[1/3] created https://res.cloudinary.com/my-cloud/image/upload/.../campaigns/fall/banner.png
+[2/3] created https://res.cloudinary.com/my-cloud/video/upload/.../campaigns/fall/teaser.mp4
+[3/3] created https://res.cloudinary.com/my-cloud/raw/upload/.../campaigns/fall/notes.txt
 ```
 
----
+- The resource type comes from the file extension: images (including PDF and SVG) → image, video and audio → video, everything else → raw. `--rt` overrides it.
+- Images and videos get a public ID without extension; raw files keep it (`notes.txt`).
+- `-r` includes subdirectories as subfolders. Dotfiles are skipped.
+- Existing assets are overwritten and reported as `overwritten`; `--no-overwrite` keeps them (`skipped`).
+- When two files would get the same public ID (`photo.jpg`, `photo.png`), both get their extension as suffix (`photo_jpg`, `photo_png`).
+- Files over 20 MB are uploaded in chunks with progress; temporary failures are retried.
+- `--dry-run` shows the planned public IDs and works without credentials.
 
-### login
+### Deleting
 
-Connect and authenticate your Cloudinary account:
+```
+[my-cloud]$~/products rm hero
+deleted  products/hero
+Deleted 1 · not found 0 · failed 0
+
+[my-cloud]$~ rm -r campaigns/fall
+Delete 3 assets (1 image, 1 video, 1 raw, 2.1 MB) and 1 folder in cloud my-cloud:
+  ...
+Proceed? [y/N]
+```
+
+- `rm -r` deletes everything in the folder and its subfolders (all resource and delivery types), then the folder.
+- Recursive deletes, wildcard deletes and deletes of more than 20 assets show the plan and ask first. Emptying the whole account asks you to type the cloud name. `-y` skips the question; scripts need `--yes`.
+- Every asset is reported as `deleted`, `not found` or `failed`, and the exit code is `3` if anything was not found or failed.
+- `--skip-backup` deletes folders that still hold backups of deleted assets.
+
+### Moving and renaming
+
+```
+[my-cloud]$~/products mv hero archive/
+Moved: /products/hero -> /archive/hero (URL unchanged)
+```
+
+- **Dynamic folder mode:** moving and renaming keep the delivery URL (the folder and display name change). `--public-id` also renames the public ID, which changes the URL. Folders can be moved and renamed: `mv products catalog/products`.
+- **Fixed folder mode:** the folder is part of the public ID, so moving or renaming changes the URL. Cloudinary can't move folders in this mode.
+- An existing target stops the move; `-o` goes ahead. In dynamic mode, `-o` only replaces an asset with the same public ID; an asset that merely has the same name is kept.
+- `--dry-run` shows whether the URL will change.
+
+### URLs, previews and downloads
 
 ```bash
-# Interactive guided prompt
-$~ login
-
-# Pass URL directly on command line
-$~ login "cloudinary://<api_key>:<api_secret>@<cloud_name>"
-
-# Save under a named profile (e.g. staging or prod)
-$~ login prod "cloudinary://<api_key>:<api_secret>@<prod_cloud>"
+url hero                          # delivery URL
+url hero --t="f_auto,q_auto,w_800" # with a transformation
+url 'banner-*'                    # several assets
+url private-doc --signed          # signed URL for authenticated assets
+view hero --t="e_grayscale"       # inline preview (iTerm2, WezTerm, Ghostty, VS Code, Warp)
+download 'shots/*' ./shots/       # several files into a folder
 ```
+
+- Unsigned URLs without `--t` are exactly the asset's `secure_url`.
+- `view` prints the preview URL when the terminal can't show images.
+- `download` skips local files that already exist unless `-f`; private and authenticated assets download through signed URLs.
 
 ---
 
-### config
-
-Inspect active account details or switch between profiles:
+## Accounts and credentials
 
 ```bash
-# View active account details and masked secret
-$~ config
+# Interactive (the secret is not shown while you type)
+cldsh login
 
-# List all saved profiles
-$~ config ls
+# From a script, without putting the secret in your shell history
+printf %s "$CLOUDINARY_URL" | cldsh login prod --stdin
 
-# Switch active profile
-$~ config use prod
-
-# Delete a saved profile
-$~ config rm staging
-```
----
-
-### ls
-
-List folders/files in the current Cloudinary folder.
-
-**Short**
-
-```
-$~ ls
-[DIR] apps
-      hero
-      logo
+cldsh config ls          # saved profiles
+cldsh config use prod    # switch (also inside the shell)
+cldsh config             # active account, where it comes from, what it overrides
 ```
 
-**Long (with header)** — values are from the **original asset**:
+Profiles are stored in `~/.config/cldsh/credentials.json` (`%APPDATA%\cldsh` on Windows) with owner-only permissions. Writes are atomic, and a damaged file is never overwritten (`login --reset` moves it aside).
 
-```
-$~ ls -l
+When several sources are present, the strongest wins:
 
-      SIZE(KB)  DIMENSIONS(px)  NAME           TYPE
-      ────────  ──────────────  ─────────────  ────
-           245  1200x630        hero           png
-            15  512x512         logo           svg
-```
+1. `--profile <name>`, `config use` / `login` in the current shell, or `CLOUDINARY_PROFILE`
+2. `CLOUDINARY_URL` (or `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) in the environment
+3. A `.env` file in the current directory
+4. The saved default profile
 
-Other resource types:
-
-```
-$~ ls -l --rt=video
-$~ ls -l --rt=raw
-```
+`cldsh` warns at startup, and `config` shows, when a source is overridden. `CLOUDINARY_URL` options such as `?upload_prefix=https://api-eu.cloudinary.com` (EU/AP data centers) and private CDN settings are supported.
 
 ---
 
-### cd
-
-Change folder (like a shell).
-
-```
-$~ ls
-[DIR] apps
-$~ cd apps
-$~/apps ls
-[DIR] my-app
-$~/apps cd my-app
-$~/apps/my-app pwd
-/apps/my-app
-$~/apps/my-app cd ..
-$~/apps cd /
-$~ cd -
-$~/apps
-```
-
----
-
-### mkdir
-
-Create a subfolder:
-
-```
-$~/apps mkdir my-app
-Created folder: apps/my-app
-```
-
----
-
-### upload
-
-Upload a local file to the **current** Cloudinary folder.
-
-**Usage**
-
-```
-upload <local_path_or_dir> [name] [-r] [-o] [--rt=image] [--dry-run] [-v]
-```
-
-* `<local_path_or_dir>`: local file or folder path (`~` supported).
-* `[name]`: optional custom public_id for single file upload.
-* `-r, --recursive`: recursively upload all nested subdirectories and files, mirroring directory structure into Cloudinary.
-* `-o`: overwrite existing assets (default: true).
-* `--dry-run`: preview which files will be uploaded and their target public IDs without making API calls.
-* `--concurrency=N`: number of simultaneous uploads (default: 4, range 1–10).
-* **Collision handling**: files with the same name but different extensions (e.g. `profile.jpg` and `profile.png`) are automatically disambiguated (e.g. `profile_jpg` and `profile_png`) so they never silently overwrite each other.
-
-**Examples**
-
-```
-$~/assets upload "~/Pictures/Product Shot.png" product-shot
-Uploaded: https://res.cloudinary.com/<cloud>/image/upload/v.../assets/product-shot.png
-
-$~/assets upload ~/Downloads/logo.svg
-Uploaded: https://res.cloudinary.com/<cloud>/image/upload/v.../assets/logo.svg
-```
-
-Common error:
-
-```
-$~ upload ./missing.png
-File not found: /absolute/path/to/missing.png
-```
-
----
-
-### rm / rm -rf
-
-Delete a single asset or a folder recursively.
-
-Single asset:
-
-```
-# Single asset
-$~/assets rm product-shot
-Remove: assets/product-shot → ok
-
-# Wildcard asset deletion (e.g. all assets starting with cld)
-$~/assets rm cld*
-Remove: assets/cld-hero → ok
-Remove: assets/cld-banner → ok
-Deleted 2 asset(s) matching "cld*".
-
-# Wildcard extension deletion
-$~/assets rm *.png
-```
-
-Recursive delete:
-
-```
-$~/apps rm -rf my-app
-Removed folder: apps/my-app
-
-# Wildcard recursive delete
-$~/apps rm -rf test*
-```
----
-
-### pwd
-
-Print the current folder path:
-
-```
-$~/apps/my-app pwd
-/apps/my-app
-```
----
-
-### mv
-
-Move or rename assets within the current folder or across virtual folders:
-
-```
-# Rename an asset in the current folder
-$~/assets mv old-logo new-logo
-
-# Move an asset into another folder (retaining basename)
-$~/assets mv hero archive/
-
-# Move to an explicit destination path
-$~ mv assets/hero archive/2026/hero-legacy
-
-# Preview rename without executing
-$~/assets mv hero archive/ --dry-run
-```
-
----
-
-### lcd / lpwd
-
-Manage your local machine working directory without leaving the shell:
-
-```
-# Print current local working directory
-$~ lpwd
-/Users/username/Projects/my-app
-
-# Change local working directory
-$~ lcd ~/Pictures
-Local directory: /Users/username/Pictures
-
-# Now relative uploads resolve against the new local folder
-$~ upload ./screenshot.png
-```
-
----
-
-### tree
-
-Draw an ASCII tree with connectors:
-
-```
-$~/MyProject tree -d 3
-MyProject
-└── pages
-    └── home
-        ├── carousel
-        │   ├── ImageA
-        │   ├── ImageB
-        │   └── ...
-        └── explore-more
-            ├── Card1
-            └── ...
-```
-
-Options:
-
-* `-d N` limit depth (default: infinite)
-* `--rt=image|video|raw` resource type
-* `--max=100` files per dir (default 100)
-
----
-
-### url
-
-Print the asset’s CDN URL by name or full public_id. You can inject a transform via `--t`, which is inserted after `/upload/`.
-
-```
-# in current folder
-$~/assets url product-shot
-https://res.cloudinary.com/<cloud>/image/upload/v.../assets/product-shot.png
-
-# with transform
-$~/assets url product-shot --t="f_auto,q_auto,w_800"
-https://res.cloudinary.com/<cloud>/image/upload/f_auto,q_auto,w_800/v.../assets/product-shot.png
-
-# use a full public_id from anywhere
-$~ url assets/product-shot --t="c_fill,w_600,h_400"
-```
-
----
-
-### info
-
-Inspect complete asset metadata in an aligned card view:
-
-```
-$~/assets info logo
-
-  assets/logo
-  Resource Type:   image
-  Delivery Type:   upload
-  Format:          svg
-  Dimensions:      512 × 512 px
-  File Size:       15 KB
-  Created At:      2024-01-15T10:20:30Z
-  Version:         v1705314030
-  URL:             https://res.cloudinary.com/<cloud>/image/upload/...
-```
-
-Add `-v` to print the full raw API response JSON.
-
----
-
-### download
-
-Download an asset from Cloudinary to your local machine:
-
-```
-# downloads to ./logo.svg in current local directory
-$~/assets download logo
-
-# download to a custom local destination folder or file path
-$~/assets download logo ~/Downloads/
-$~/assets download logo ./public/brand-logo.svg
-```
-
----
-
-### open
-
-Open an asset directly in your default browser:
-
-```
-$~/assets open logo
-$~/assets open logo --t="w_1200,f_auto"
-```
----
-
-### view / preview
-
-Render actual high-resolution images and video thumbnails directly inside your terminal emulator (supports Warp, iTerm2, WezTerm, Ghostty, and VS Code terminal):
-
-```
-# Display image directly in terminal
-$~/portfolio view hero
-
-# Preview a transformation directly in terminal
-$~/portfolio view hero --t="w_400,e_grayscale"
-
-# Preview video first-frame poster thumbnail
-$~/videos view promo --rt=video
-```
----
-
-## Tips
-
-* Prefer `f_auto,q_auto` in `--t` for automatic format/quality:
-
-  ```
-  url product-shot --t="f_auto,q_auto,w_1200"
-  ```
-* Treat folders as namespaces:
-
-  ```
-  apps/<app>/<env>/<type>    e.g., apps/my-app/dev/images
-  ```
-* Keep stable names (public_id) if you plan to replace assets later (re-upload with `-o`).
+## Folder modes and API limits
+
+- `cldsh` detects the folder mode of your account. Override it with `--folder-mode=fixed|dynamic` or `CLDSH_FOLDER_MODE`.
+- Listing folders and assets uses Cloudinary's **Admin API**, which is rate-limited per hour (500 requests on the Free plan). `cldsh` caches listings for a few seconds, warns when less than 10% of the hourly budget is left, and `quota` shows the remaining requests. Uploads and delivery URLs don't count.
+- In fixed folder mode, listing a folder also pages through its subfolders' assets, so very large folders cost more requests.
 
 ---
 
 ## Troubleshooting
 
-**Missing CLOUDINARY_* env**
-Ensure `.env` is present and filled correctly.
-
-**File not found on upload**
-Use an absolute path or quote a relative path with spaces. `~` is supported.
-
-**`[object Object]` after upload**
-Use the upload command that prints a plain string URL (add `-v` to see the raw response).
-
-**Rate limits on listing**
-Admin API calls (`ls`, `tree`, etc.) can be rate-limited on Free. CDN delivery is not.
-
-**Tree looks flat**
-Ensure you have the updated `printTree` implementation so connectors/indentation render correctly.
+| Problem | What to do |
+| :--- | :--- |
+| `Not connected to a Cloudinary account` | Run `cldsh login`, or set `CLOUDINARY_URL`. `cldsh config` shows what is active. |
+| The wrong account is used | `cldsh config` lists the source in use and the ones it overrides. |
+| `Refusing to run "rm" on ... names that all exist in the local directory` | Your shell expanded a wildcard; quote it: `cldsh rm 'cld*'`. |
+| `needs an interactive terminal` / exit code 4 | The command wants a confirmation; add `--yes` in scripts. |
+| `matches 2 assets` | Add `--rt=image` (or video/raw) or use the public ID. |
+| Rate limit reached | `cldsh quota` shows when the hourly budget resets. |
 
 ---
 
-## FAQ
+## License
 
-**Are `ls -l` dimensions pixels?**
-Yes. For images/videos they’re **pixels** of the original asset. For raw files, `?x?`. For SVGs, pixels if detected.
-
-**Are `url` links public?**
-Yes for default uploads (`type=upload`). Anyone with the link can access.
-
-**How do I use private images?**
-Upload as `type=authenticated` and generate **signed URLs** on your server (never expose your API secret).
-Common flow: frontend calls `/media/url?publicId=...`, backend returns `cloudinary.url(..., { sign_url: true, type: 'authenticated' })`.
-Or proxy/stream via your backend.
-
-**Time-limited downloads?**
-For original file downloads with expiry, use `private_download_url` (requires `type=private` assets) on your server.
-
----
-
-Happy shipping!
+[MIT](LICENSE). See [CHANGELOG.md](CHANGELOG.md) for changes between versions.

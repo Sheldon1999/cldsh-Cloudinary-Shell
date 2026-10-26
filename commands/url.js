@@ -1,39 +1,43 @@
 import { actionUrl } from '../lib/actions/url.js';
+import { usageError, EXIT } from '../lib/errors.js';
+import { isGlob } from '../lib/glob.js';
+import { RT_FLAG, TYPE_FLAG, resourceTypeFrom } from '../lib/flags.js';
 
-export default async function url(ctx, args = [], flags = {}) {
-  const { printer } = ctx;
-  const a0 = args[0];
-  if (!a0) {
-    return printer.println(printer.warn('url <name|public_id|pattern> [--rt=image] [--t="..."] [--signed] [--type=...] [--json]'));
+export const spec = {
+  name: 'url',
+  usage: 'url <name|public_id|pattern>... [--t="<transformation>"] [--signed] [--type=upload] [--rt=image|video|raw]',
+  summary: 'Print delivery URLs, optionally transformed or signed',
+  flags: {
+    t: { type: 'string', placeholder: 'transformation', description: 'Transformation to apply, e.g. --t="w_300,c_fill"' },
+    signed: {
+      type: 'boolean',
+      description: 'Sign the URL (needed for authenticated assets; private originals get a download URL)',
+    },
+    ...RT_FLAG,
+    ...TYPE_FLAG,
+  },
+};
+
+export default async function url(ctx, args, flags) {
+  if (!args.length) throw usageError('url needs an asset name, path or pattern', spec.usage);
+  const backend = await ctx.backend();
+  const result = await actionUrl(backend, {
+    cwd: ctx.cwd,
+    targets: args,
+    transformation: flags.t,
+    signed: Boolean(flags.signed),
+    deliveryType: flags.type,
+    resourceType: resourceTypeFrom(flags),
+  });
+  if (result.failed?.length) ctx.setExitCode(EXIT.PARTIAL);
+  if (!flags.signed && result.items.some(i => i.type === 'authenticated' || (i.type === 'private' && !flags.t))) {
+    ctx.out.warn('Authenticated assets and private originals are only delivered through signed URLs; add --signed.');
   }
+  return result;
+}
 
-  const resourceType = flags.rt || flags['resource-type'] || 'image';
-  const deliveryType = flags.type || (flags.signed ? 'authenticated' : 'upload');
-
-  try {
-    const result = await actionUrl(a0, {
-      cwd: ctx.cwd,
-      transformation: flags.t,
-      signed: Boolean(flags.signed),
-      deliveryType,
-      resourceType,
-    });
-
-    if (flags.json) {
-      console.log(JSON.stringify(result, null, 2));
-      return result;
-    }
-
-    if (result.items.length === 1 && !result.isGlob) {
-      printer.println(result.items[0].url);
-    } else {
-      for (const item of result.items) {
-        printer.println(`${item.public_id}: ${item.url}`);
-      }
-    }
-    return result;
-  } catch (e) {
-    printer.println(printer.error(e?.message || String(e)));
-    if (flags.json) throw e;
-  }
+export function render(result, ctx) {
+  const single = result.items.length === 1 && !result.failed && !isGlob(result.items[0].target);
+  for (const item of result.items) ctx.out.print(single ? item.url : `${item.public_id}: ${item.url}`);
+  for (const f of result.failed || []) ctx.out.error(`${f.target}: ${f.message}`);
 }

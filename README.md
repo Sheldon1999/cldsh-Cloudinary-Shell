@@ -18,6 +18,23 @@ It works with both Cloudinary folder modes: **dynamic folders** (every account c
 
 ---
 
+## How `cldsh` compares
+
+Cloudinary also publishes an official CLI ([`cloudinary-cli`](https://github.com/cloudinary/cloudinary-cli), Python) and official MCP packages ([`@cloudinary/*`](https://github.com/cloudinary/mcp-servers)). `cldsh` is a separate, independent project built for a different workflow: one Node binary that is a shell, a scriptable CLI and an MCP server together, authenticated with your existing API key — no Python runtime, no OAuth browser flow, no hosted service required.
+
+| | `cldsh` | `cloudinary-cli` (official) | `@cloudinary/*` MCP (official) | community MCP servers |
+| :--- | :--- | :--- | :--- | :--- |
+| Runtime | Node, `npx` | Python, `pipx`/Docker | Node, `npx` per package | Node, `npx` |
+| Auth | API key / `.env` | OAuth login | OAuth (hosted) or API key | API key |
+| Interactive shell (`cd`, `ls`, tab completion) | ✅ | ❌ one-shot flags | ❌ not a CLI | ❌ not a CLI |
+| MCP server | ✅ same binary | ❌ | ✅ (5 separate packages) | ✅ |
+| Confirm before delete/move/overwrite | ✅ two-step token, `--dry-run` | ❌ | — | ❌ |
+| Fixed/dynamic folder mode | ✅ auto-detected | not documented | not documented | not documented |
+
+Pick `cldsh` for one local tool, API-key auth and a safety net on AI-driven changes. Pick the official packages for Cloudinary-maintained, domain-split MCP servers with OAuth and enterprise support.
+
+---
+
 ## Quick start
 
 Requires **Node.js 20 or newer** and a Cloudinary account (cloud name, API key and API secret, or a `CLOUDINARY_URL`).

@@ -1,0 +1,17 @@
+startCommand:
+  type: "stdio"
+  command: "node"
+  args: ["cldsh.js", "--mcp"]
+  env:
+    CLOUDINARY_URL: "${config.cloudinaryUrl}"
+configSchema:
+  type: "object"
+  required:
+    - cloudinaryUrl
+  properties:
+    cloudinaryUrl:
+      type: "string"
+      title: "Cloudinary URL"
+      description: "cloudinary://<api_key>:<api_secret>@<cloud_name>, from the Cloudinary console's API keys page."
+exampleConfig:
+  cloudinaryUrl: "cloudinary://123456789012345:abcdefghijklmnopqrstuvwxyz12@demo"

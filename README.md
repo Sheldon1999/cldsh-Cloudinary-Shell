@@ -6,6 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
 
+![cldsh demo: tab completion, a colored `ls -l` listing, a transformed delivery URL, and a recursive delete that previews the plan and asks before anything is removed](docs/demo.gif)
+
 `cldsh` lets you work with a Cloudinary account like a file system:
 
 - **AI agents** (Claude Desktop, Claude Code, Cursor) get Cloudinary tools through the Model Context Protocol (MCP), with previews and confirmation before anything is deleted or replaced.

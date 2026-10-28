@@ -2,6 +2,12 @@
 
 All notable changes to `cloudinary-shell` (`cldsh`) are listed here.
 
+## 2.0.1 (2026-10-28)
+
+- Added `mcpName` to `package.json` so `cldsh` can be published to the
+  Official MCP Registry (`registry.modelcontextprotocol.io`). No behavior
+  change.
+
 ## 2.0.0 (2026-10-27)
 
 This release makes `cldsh` safe and correct on every Cloudinary account, including accounts created since June 2024, which use **dynamic folders**.

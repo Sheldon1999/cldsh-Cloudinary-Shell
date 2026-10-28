@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Sheldon1999/cldsh-Cloudinary-Shell",
+  "description": "Unix-style shell, scriptable CLI and MCP server for Cloudinary asset management.",
+  "version": "2.0.1",
+  "repository": {
+    "url": "https://github.com/Sheldon1999/cldsh-Cloudinary-Shell",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "cloudinary-shell",
+      "version": "2.0.1",
+      "transport": { "type": "stdio" }
+    }
+  ]
+}

@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/cloudinary-shell.svg)](https://www.npmjs.com/package/cloudinary-shell)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
+[![Sheldon1999/cldsh-Cloudinary-Shell MCP server](https://glama.ai/mcp/servers/Sheldon1999/cldsh-Cloudinary-Shell/badges/score.svg)](https://glama.ai/mcp/servers/Sheldon1999/cldsh-Cloudinary-Shell)
 
 ![cldsh demo: tab completion, a colored `ls -l` listing, a transformed delivery URL, and a recursive delete that previews the plan and asks before anything is removed](docs/demo.gif)
 
